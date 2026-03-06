@@ -45,27 +45,17 @@ fn repl<S: Iterator<Item = char>>(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use vm::{Instruction, Procedure};
-
-    let mut program = Vec::new();
-    program.push(Instruction::new(Procedure::Push, 4));
-    program.push(Instruction::new(Procedure::Push, 1));
-    program.push(Instruction::new(Procedure::Push, 11));
-    // [4 1 11]
-
-    program.push(Instruction::new(Procedure::Add, 0));
-    // [4 12]
-
-    program.push(Instruction::new(Procedure::Mult, 0));
-    // [48]
-
-    program.push(Instruction::new(Procedure::Push, 4));
-    program.push(Instruction::new(Procedure::Sub, 0));
-    // [44]
-
-    program.push(Instruction::new(Procedure::Push, 4));
-    program.push(Instruction::new(Procedure::Div, 0));
-    // [11]
+    let mut asm_file = std::fs::File::open("program.vasm")?;
+    let mut asm = String::new();
+    _ = asm_file.read_to_string(&mut asm);
+    let mut assembler = vm::Assembler::new();
+    let program = match assembler.assemble_str(&asm) {
+        Ok(is) => is,
+        Err(e) => {
+            println!("{e}");
+            return Ok(());
+        },
+    };
 
     let f = std::fs::File::create("program.vm")?;
     vm::save_program(f, program.as_slice())?;

@@ -36,15 +36,7 @@ pub enum Procedure {
     Div,
     Jump,
     JumpIf,
-}
-
-impl Procedure {
-    fn decode(b: u8) -> Option<Self> {
-        match b {
-            0..7 => Some(PROC_DEFS[b as usize].proc),
-            _ => None,
-        }
-    }
+    Dup,
 }
 
 struct ProcedureDefinition {
@@ -64,7 +56,7 @@ impl ProcedureDefinition {
     }
 }
 
-const PROC_DEFS: [ProcedureDefinition; 8] = [
+const PROC_DEFS: [ProcedureDefinition; 9] = [
     ProcedureDefinition {
         proc: Procedure::Nop,
         name: "nop",
@@ -105,7 +97,26 @@ const PROC_DEFS: [ProcedureDefinition; 8] = [
         name: "jif",
         expects_operand: true,
     },
+    ProcedureDefinition {
+        proc: Procedure::Dup,
+        name: "dup",
+        expects_operand: false,
+    },
 ];
+
+impl Procedure {
+    fn decode(b: u8) -> Option<Self> {
+        const LEN: u8 = if PROC_DEFS.len() > u8::max_value() as usize {
+            u8::max_value()
+        } else {
+            PROC_DEFS.len() as u8
+        };
+        match b {
+            0..LEN => Some(PROC_DEFS[b as usize].proc),
+            _ => None,
+        }
+    }
+}
 
 /// NOTE We don't make some Procedures carry an operand because in the future we
 /// want to try to implement a #![no_std] version of this vm. Therefore if we
@@ -282,11 +293,11 @@ impl<'a> Machine<'a> {
 
             match ins.proc {
                 Nop => continue,
-                Push=> self.push_stack(ins.operand)?,
-                Add  => binary_op!(+),
+                Push => self.push_stack(ins.operand)?,
+                Add => binary_op!(+),
                 Sub => binary_op!(-),
                 Mult => binary_op!(*),
-                Div  => {
+                Div => {
                     let b = self.pop_stack()?;
                     if b == 0 {
                         return Err(Error::DivByZero);
@@ -301,11 +312,13 @@ impl<'a> Machine<'a> {
                        self.ip = ins.operand as usize;
                     }
                 },
+                Dup => self.push_stack(self.last_value().ok_or(Error::StackUnderflow)?)?,
             }
         }
     }
 
     /// Helper method to help discoverability of Assembler
+    #[allow(dead_code)]
     pub fn assembler() -> Assembler {
         Assembler::new()
     }
@@ -397,14 +410,20 @@ fn load_program<R: io::Read>(mut r: R, out: &mut [Instruction]) -> Result<usize,
     Ok(count)
 }
 
-struct Assembler {
+pub struct Assembler {
     line_no: u32,
 }
 
 #[derive(Debug, PartialEq)]
-struct AsmError {
+pub struct AsmError {
     row: u32,
     msg: String,
+}
+
+impl fmt::Display for AsmError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.row, self.msg)
+    }
 }
 
 impl Assembler {
@@ -434,33 +453,29 @@ impl Assembler {
             let proc_def = ProcedureDefinition::decode_str(proc_str)
                 .ok_or(self.err(format!("unknown procedure: '{proc_str}'")))?;
 
-            let op_str;
-            let op: Option<Value> = match split.next() {
-                Some(v) => {
-                    op_str = v;
-                    if let Ok(i) = Value::from_str_radix(v, 10) {
-                        Some(i)
-                    } else {
-                       None
-                    }
-                },
-                None => {
-                    op_str = "";
-                    None
-                }
+            let op_tok = match split.next() {
+                Some(";") | None => None,
+                Some(v) => Some(v),
+            };
+            let (op_str, op_val) = match op_tok {
+                Some(v) => (v, Value::from_str_radix(v, 10).ok()),
+                None => ("", None),
             };
 
-            let op = match (proc_def.expects_operand, op) {
-                (true, Some(i)) => i,
-                (true, None) => {
-                   let msg = format!("procedure '{}' expects an integer operand, found: '{}'", proc_str, op_str);
+            let op = match (proc_def.expects_operand, op_tok, op_val) {
+                (true, _, Some(i)) => i,
+                (true, _, None) => {
+                    let msg = format!(
+                        "procedure '{}' expects an integer operand, found: '{}'",
+                        proc_str, op_str
+                    );
                     return Err(self.err(msg));
-                },
-                (false, Some(i)) => {
-                   let msg = format!("procedure '{}' expects no operand, found: '{}'", proc_str, i);
+                }
+                (false, Some(v), _) => {
+                    let msg = format!("procedure '{}' expects no operand, found: '{}'", proc_str, v);
                     return Err(self.err(msg));
-                },
-                (false, None) => 0,
+                }
+                (false, None, _) => 0,
             };
 
             let ins = Instruction::new(proc_def.proc, op);
@@ -532,7 +547,22 @@ mod tests {
             ";
         let mut asm = Assembler::new();
         let res = asm.assemble_str(source);
-        assert_eq!(res, Err(AsmError{ row: 4, msg: "procedure 'add' expects no operand, found: '1'".to_string() }));
+        assert_eq!(res, Err(AsmError{ row: 5, msg: "procedure 'add' expects no operand, found: '1'".to_string() }));
+
+        let source = "
+            push 4
+            push 1
+            push 11  ; [4 1 11]
+            add  a   ; [4 12]
+            mult     ; [48]
+            push 4
+            sub      ; [44]
+            push 4
+            div      ; [11]
+            ";
+        let mut asm = Assembler::new();
+        let res = asm.assemble_str(source);
+        assert_eq!(res, Err(AsmError{ row: 5, msg: "procedure 'add' expects no operand, found: 'a'".to_string() }));
     }
 
     #[test]
