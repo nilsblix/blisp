@@ -14,7 +14,7 @@ performance.
 
 Because it's fun and I've been learning a lot. I've never really touched
 functional programming, apart from some small-scale toy-projects in OCaml, so
-implementing a lisp small interpreter from scratch has shown me a lot.
+implementing a small lisp interpreter from scratch has shown me a lot.
 
 Lately, building software at a low level, i.e managing individual bytes and
 heap allocations, has been a pleasure. I have experience with C/Zig-style
