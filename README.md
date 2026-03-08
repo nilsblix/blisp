@@ -1,4 +1,4 @@
-Bear Lisp
+Blisp
 =========
 
 > An implementation of a small lisp interpreter written in Rust
@@ -26,7 +26,7 @@ logic.
 
 ## Installation
 
-Only prerequisite to build bear-lisp is Rust. All of the external dependencies
+Only prerequisite to build blisp is Rust. All of the external dependencies
 are installed via Cargo, therefore to build a binary, execute:
 
 ```console

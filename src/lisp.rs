@@ -1088,7 +1088,7 @@ mod tests {
 
     #[test]
     fn parse_simples() {
-        let mut s = Stream::from_str("   12   \n15 340 #t #f ~90 hello_world bear-lisp");
+        let mut s = Stream::from_str("   12   \n15 340 #t #f ~90 hello_world blisp");
 
         assert_eq!(s.read_value().unwrap(), Value::Fixnum(12));
         assert_eq!(s.line_num, 1);
@@ -1099,7 +1099,7 @@ mod tests {
         assert_eq!(s.read_value().unwrap(), Value::Bool(false));
         assert_eq!(s.read_value().unwrap(), Value::Fixnum(-90));
         assert_eq!(s.read_value().unwrap(), Value::Symbol("hello_world".to_string()));
-        assert_eq!(s.read_value().unwrap(), Value::Symbol("bear-lisp".to_string()));
+        assert_eq!(s.read_value().unwrap(), Value::Symbol("blisp".to_string()));
 
         let mut s = Stream::from_str("(1 2 hello world) (34 (35 some))");
         assert_eq!(s.read_value().unwrap().to_string(), "(1 2 hello world)");
