@@ -21,7 +21,7 @@ heap allocations, has been a pleasure. I have experience with C/Zig-style
 memory management (i.e alloc and free), but not with RAII. I chose to write
 this interpreter in Rust to familiarize myself with modern RAII. Also the
 article series I followed allowed me to largely focus on learning Rust and its
-style of memory management, instead of fighting with the developing correct
+style of memory management, instead of fighting with developing the correct
 logic.
 
 ## Installation
@@ -42,26 +42,28 @@ $> ; These are the builtin primitives, and the stdlib.
 $> (env)
 ((+ . #<primitive:+>) (eq . #<primitive:eq>) (- . #<primitive:->) (* . #<primitive:*>) (/ . #<primitive:/>) (< . #<primitive:<>) (> . #<primitive:>>) (<= . #<primitive:<=>) (>= . #<primitive:>=>) (= . #<primitive:=>) (mod . #<primitive:mod>) (pair . #<primitive:pair>) (list . #<primitive:list>) (car . #<primitive:car>) (cdr . #<primitive:cdr>) (atom? . #<primitive:atom?>) (sym? . #<primitive:sym?>) (getchar . #<primitive:getchar>) (print . #<primitive:print>) (itoc . #<primitive:itoc>) (cat . #<primitive:cat>) (o . #<closure>) (caar . #<closure>) (cadr . #<closure>) (caddr . #<closure>) (cadar . #<closure>) (caddar . #<closure>) (cons . #<primitive:pair>) (newline .
 ) (space .  ) (getline . #<closure>) (null? . #<closure>) (length . #<closure>) (take . #<closure>) (drop . #<closure>) (merge . #<closure>) (mergesort . #<closure>) (map . #<closure>) (mem . #<closure>) (find . #<closure>) (filter . #<closure>) (range . #<closure>))
+$>
+$> ; Simple addition
 $> (+ 1 2)
 3
 $>
-$>
+$> ; Create a list from 0 to 10
 $> (range 0 10)
 (0 1 2 3 4 5 6 7 8 9)
 $>
-$>
+$> ; Add 2 to each element in the list from 0 to 10
 $> (map (lambda (x) (+ x 2)) (range 0 10))
 (2 3 4 5 6 7 8 9 10 11)
 $>
-$>
+$> ; Define the factorial function (note that the definition is recursive)
 $> (define factorial (x) (if (< x 2) 1 (* x (factorial (- x 1)))))
 #<closure>
 $>
-$>
+$> ; Check that the factorial function is correct
 $> (map factorial (list 1 2 3 4 5))
 (1 2 6 24 120)
 $>
-$>
+$> ; We even support let with lambdas.
 $> (let ((is-even (lambda (x) (= (mod x 2) 0)))) (filter is-even (range 0 31)))
 (0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30)
 $>
